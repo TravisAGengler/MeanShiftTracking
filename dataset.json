@@ -1,0 +1,1023 @@
+[
+  {
+    "attribs": [
+      "IV",
+      "OCC",
+      "DEF",
+      "OPR",
+      "BC"
+    ],
+    "name": "Basketball",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Basketball.zip"
+  },
+  {
+    "attribs": [
+      "SV",
+      "OCC",
+      "MB",
+      "FM",
+      "OPR",
+      "OV",
+      "LR"
+    ],
+    "name": "Biker",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Biker.zip"
+  },
+  {
+    "attribs": [
+      "DEF",
+      "FM",
+      "OV"
+    ],
+    "name": "Bird1",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Bird1.zip"
+  },
+  {
+    "attribs": [
+      "SV",
+      "DEF",
+      "MB",
+      "FM",
+      "IPR"
+    ],
+    "name": "BlurBody",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/BlurBody.zip"
+  },
+  {
+    "attribs": [
+      "SV",
+      "MB",
+      "FM"
+    ],
+    "name": "BlurCar2",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/BlurCar2.zip"
+  },
+  {
+    "attribs": [
+      "MB",
+      "FM",
+      "IPR"
+    ],
+    "name": "BlurFace",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/BlurFace.zip"
+  },
+  {
+    "attribs": [
+      "SV",
+      "MB",
+      "FM",
+      "IPR"
+    ],
+    "name": "BlurOwl",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/BlurOwl.zip"
+  },
+  {
+    "attribs": [
+      "OCC",
+      "DEF",
+      "IPR",
+      "OPR"
+    ],
+    "name": "Bolt",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Bolt.zip"
+  },
+  {
+    "attribs": [
+      "IV",
+      "SV",
+      "OCC",
+      "MB",
+      "IPR",
+      "OPR",
+      "OV",
+      "BC",
+      "LR"
+    ],
+    "name": "Box",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Box.zip"
+  },
+  {
+    "attribs": [
+      "IV",
+      "SV",
+      "MB",
+      "FM",
+      "BC",
+      "LR"
+    ],
+    "name": "Car1",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Car1.zip"
+  },
+  {
+    "attribs": [
+      "IV",
+      "SV"
+    ],
+    "name": "Car4",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Car4.zip"
+  },
+  {
+    "attribs": [
+      "IV",
+      "BC"
+    ],
+    "name": "CarDark",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/CarDark.zip"
+  },
+  {
+    "attribs": [
+      "SV",
+      "OCC",
+      "FM",
+      "IPR",
+      "OPR"
+    ],
+    "name": "CarScale",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/CarScale.zip"
+  },
+  {
+    "attribs": [
+      "SV",
+      "OCC",
+      "MB",
+      "FM",
+      "IPR",
+      "OV",
+      "BC"
+    ],
+    "name": "ClifBar",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/ClifBar.zip"
+  },
+  {
+    "attribs": [
+      "SV",
+      "DEF",
+      "FM",
+      "OPR",
+      "BC"
+    ],
+    "name": "Couple",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Couple.zip"
+  },
+  {
+    "attribs": [
+      "IV",
+      "DEF",
+      "BC"
+    ],
+    "name": "Crowds",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Crowds.zip"
+  },
+  {
+    "attribs": [
+      "IV",
+      "SV",
+      "OCC",
+      "DEF",
+      "MB",
+      "IPR",
+      "OPR"
+    ],
+    "name": "David",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/David.zip"
+  },
+  {
+    "attribs": [
+      "MB",
+      "FM",
+      "IPR",
+      "BC",
+      "LR"
+    ],
+    "name": "Deer",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Deer.zip"
+  },
+  {
+    "attribs": [
+      "SV",
+      "DEF",
+      "IPR"
+    ],
+    "name": "Diving",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Diving.zip"
+  },
+  {
+    "attribs": [
+      "SV",
+      "OCC",
+      "MB",
+      "FM",
+      "IPR",
+      "OPR",
+      "OV"
+    ],
+    "name": "DragonBaby",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/DragonBaby.zip"
+  },
+  {
+    "attribs": [
+      "SV",
+      "OCC",
+      "DEF",
+      "FM",
+      "IPR",
+      "OPR",
+      "OV",
+      "BC"
+    ],
+    "name": "Dudek",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Dudek.zip"
+  },
+  {
+    "attribs": [
+      "OCC",
+      "IPR",
+      "OPR",
+      "BC"
+    ],
+    "name": "Football",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Football.zip"
+  },
+  {
+    "attribs": [
+      "SV",
+      "OCC",
+      "IPR",
+      "OPR"
+    ],
+    "name": "Freeman4",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Freeman4.zip"
+  },
+  {
+    "attribs": [
+      "SV",
+      "OCC",
+      "IPR",
+      "OPR"
+    ],
+    "name": "Girl",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Girl.zip"
+  },
+  {
+    "attribs": [
+      "SV",
+      "OCC",
+      "DEF",
+      "OPR",
+      "BC"
+    ],
+    "name": "Human3",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Human3.zip"
+  },
+  {
+    "attribs": [
+      "IV",
+      "SV",
+      "OCC",
+      "DEF"
+    ],
+    "name": "Human4",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Human4.zip"
+  },
+  {
+    "attribs": [
+      "SV",
+      "OCC",
+      "DEF",
+      "FM",
+      "OPR",
+      "OV"
+    ],
+    "name": "Human6",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Human6.zip"
+  },
+  {
+    "attribs": [
+      "IV",
+      "SV",
+      "DEF",
+      "MB",
+      "FM"
+    ],
+    "name": "Human9",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Human9.zip"
+  },
+  {
+    "attribs": [
+      "IV",
+      "SV",
+      "OCC",
+      "MB",
+      "FM",
+      "IPR",
+      "OPR",
+      "OV",
+      "BC",
+      "LR"
+    ],
+    "name": "Ironman",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Ironman.zip"
+  },
+  {
+    "attribs": [
+      "SV",
+      "OCC",
+      "DEF",
+      "MB",
+      "FM",
+      "IPR",
+      "OPR"
+    ],
+    "name": "Jump",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Jump.zip"
+  },
+  {
+    "attribs": [
+      "MB",
+      "FM"
+    ],
+    "name": "Jumping",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Jumping.zip"
+  },
+  {
+    "attribs": [
+      "IV",
+      "SV",
+      "OCC",
+      "MB",
+      "FM",
+      "OPR",
+      "OV",
+      "BC"
+    ],
+    "name": "Liquor",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Liquor.zip"
+  },
+  {
+    "attribs": [
+      "IV",
+      "SV",
+      "OCC",
+      "FM",
+      "IPR",
+      "OPR",
+      "BC"
+    ],
+    "name": "Matrix",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Matrix.zip"
+  },
+  {
+    "attribs": [
+      "IV",
+      "SV",
+      "MB",
+      "FM",
+      "IPR",
+      "BC",
+      "LR"
+    ],
+    "name": "MotorRolling",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/MotorRolling.zip"
+  },
+  {
+    "attribs": [
+      "SV",
+      "OCC",
+      "DEF",
+      "IPR",
+      "OPR",
+      "OV",
+      "LR"
+    ],
+    "name": "Panda",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Panda.zip"
+  },
+  {
+    "attribs": [
+      "SV",
+      "OCC",
+      "IPR",
+      "OPR",
+      "LR"
+    ],
+    "name": "RedTeam",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/RedTeam.zip"
+  },
+  {
+    "attribs": [
+      "IV",
+      "SV",
+      "IPR",
+      "OPR",
+      "BC"
+    ],
+    "name": "Shaking",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Shaking.zip"
+  },
+  {
+    "attribs": [
+      "IV",
+      "DEF",
+      "IPR",
+      "OPR",
+      "BC"
+    ],
+    "name": "Singer2",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Singer2.zip"
+  },
+  {
+    "attribs": [
+      "IV",
+      "SV",
+      "OCC",
+      "DEF",
+      "OPR",
+      "BC"
+    ],
+    "name": "Skating1",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Skating1.zip"
+  },
+  {
+    "attribs": [
+      "SV",
+      "OCC",
+      "DEF",
+      "FM",
+      "OPR"
+    ],
+    "name": "Skating2",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Skating2.zip"
+  },
+  {
+    "attribs": [
+      "IV",
+      "SV",
+      "DEF",
+      "IPR",
+      "OPR"
+    ],
+    "name": "Skiing",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Skiing.zip"
+  },
+  {
+    "attribs": [
+      "IV",
+      "SV",
+      "OCC",
+      "MB",
+      "FM",
+      "IPR",
+      "OPR",
+      "BC"
+    ],
+    "name": "Soccer",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Soccer.zip"
+  },
+  {
+    "attribs": [
+      "SV",
+      "FM",
+      "IPR",
+      "OPR",
+      "LR"
+    ],
+    "name": "Surfer",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Surfer.zip"
+  },
+  {
+    "attribs": [
+      "IV",
+      "IPR",
+      "OPR"
+    ],
+    "name": "Sylvester",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Sylvester.zip"
+  },
+  {
+    "attribs": [
+      "IV",
+      "OCC",
+      "DEF",
+      "MB",
+      "FM",
+      "IPR",
+      "OPR",
+      "OV"
+    ],
+    "name": "Tiger2",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Tiger2.zip"
+  },
+  {
+    "attribs": [
+      "IV",
+      "SV",
+      "IPR",
+      "OPR",
+      "BC"
+    ],
+    "name": "Trellis",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Trellis.zip"
+  },
+  {
+    "attribs": [
+      "SV",
+      "OCC",
+      "DEF"
+    ],
+    "name": "Walking",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Walking.zip"
+  },
+  {
+    "attribs": [
+      "SV",
+      "OCC",
+      "LR"
+    ],
+    "name": "Walking2",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Walking2.zip"
+  },
+  {
+    "attribs": [
+      "IV",
+      "SV",
+      "OCC",
+      "DEF",
+      "MB",
+      "FM",
+      "OPR"
+    ],
+    "name": "Woman",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Woman.zip"
+  },
+  {
+    "attribs": [
+      "OCC",
+      "DEF",
+      "FM",
+      "IPR",
+      "OPR"
+    ],
+    "name": "Bird2",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Bird2.zip"
+  },
+  {
+    "attribs": [
+      "MB",
+      "FM"
+    ],
+    "name": "BlurCar1",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/BlurCar1.zip"
+  },
+  {
+    "attribs": [
+      "MB",
+      "FM"
+    ],
+    "name": "BlurCar3",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/BlurCar3.zip"
+  },
+  {
+    "attribs": [
+      "MB",
+      "FM"
+    ],
+    "name": "BlurCar4",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/BlurCar4.zip"
+  },
+  {
+    "attribs": [
+      "SV",
+      "MB",
+      "FM",
+      "OPR",
+      "OV",
+      "BC"
+    ],
+    "name": "Board",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Board.zip"
+  },
+  {
+    "attribs": [
+      "DEF",
+      "BC"
+    ],
+    "name": "Bolt2",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Bolt2.zip"
+  },
+  {
+    "attribs": [
+      "SV",
+      "MB",
+      "FM",
+      "IPR",
+      "OPR"
+    ],
+    "name": "Boy",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Boy.zip"
+  },
+  {
+    "attribs": [
+      "IV",
+      "SV",
+      "MB",
+      "FM",
+      "BC"
+    ],
+    "name": "Car2",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Car2.zip"
+  },
+  {
+    "attribs": [
+      "IV",
+      "SV",
+      "BC"
+    ],
+    "name": "Car24",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Car24.zip"
+  },
+  {
+    "attribs": [
+      "IV",
+      "OCC",
+      "FM",
+      "IPR",
+      "OPR",
+      "BC"
+    ],
+    "name": "Coke",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Coke.zip"
+  },
+  {
+    "attribs": [
+      "OCC",
+      "BC"
+    ],
+    "name": "Coupon",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Coupon.zip"
+  },
+  {
+    "attribs": [
+      "SV",
+      "DEF",
+      "FM",
+      "OPR",
+      "BC"
+    ],
+    "name": "Crossing",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Crossing.zip"
+  },
+  {
+    "attribs": [
+      "SV",
+      "DEF",
+      "IPR",
+      "OPR"
+    ],
+    "name": "Dancer",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Dancer.zip"
+  },
+  {
+    "attribs": [
+      "DEF"
+    ],
+    "name": "Dancer2",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Dancer2.zip"
+  },
+  {
+    "attribs": [
+      "IPR",
+      "OPR"
+    ],
+    "name": "David2",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/David2.zip"
+  },
+  {
+    "attribs": [
+      "OCC",
+      "DEF",
+      "OPR",
+      "BC"
+    ],
+    "name": "David3",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/David3.zip"
+  },
+  {
+    "attribs": [
+      "SV",
+      "DEF",
+      "OPR"
+    ],
+    "name": "Dog",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Dog.zip"
+  },
+  {
+    "attribs": [
+      "SV",
+      "IPR",
+      "OPR"
+    ],
+    "name": "Dog1",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Dog1.zip"
+  },
+  {
+    "attribs": [
+      "IV",
+      "SV",
+      "OCC",
+      "IPR",
+      "OPR"
+    ],
+    "name": "Doll",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Doll.zip"
+  },
+  {
+    "attribs": [
+      "OCC"
+    ],
+    "name": "FaceOcc1",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/FaceOcc1.zip"
+  },
+  {
+    "attribs": [
+      "IV",
+      "OCC",
+      "IPR",
+      "OPR"
+    ],
+    "name": "FaceOcc2",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/FaceOcc2.zip"
+  },
+  {
+    "attribs": [
+      "IV"
+    ],
+    "name": "Fish",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Fish.zip"
+  },
+  {
+    "attribs": [
+      "SV",
+      "DEF",
+      "MB",
+      "FM",
+      "IPR",
+      "OPR"
+    ],
+    "name": "FleetFace",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/FleetFace.zip"
+  },
+  {
+    "attribs": [
+      "IPR",
+      "OPR",
+      "BC"
+    ],
+    "name": "Football1",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Football1.zip"
+  },
+  {
+    "attribs": [
+      "SV",
+      "IPR",
+      "OPR"
+    ],
+    "name": "Freeman1",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Freeman1.zip"
+  },
+  {
+    "attribs": [
+      "SV",
+      "IPR",
+      "OPR"
+    ],
+    "name": "Freeman3",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Freeman3.zip"
+  },
+  {
+    "attribs": [
+      "SV",
+      "OCC",
+      "DEF",
+      "MB",
+      "OPR"
+    ],
+    "name": "Girl2",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Girl2.zip"
+  },
+  {
+    "attribs": [
+      "SV",
+      "DEF",
+      "IPR",
+      "OPR"
+    ],
+    "name": "Gym",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Gym.zip"
+  },
+  {
+    "attribs": [
+      "IV",
+      "SV",
+      "MB",
+      "OPR"
+    ],
+    "name": "Human2",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Human2.zip"
+  },
+  {
+    "attribs": [
+      "SV",
+      "OCC",
+      "DEF"
+    ],
+    "name": "Human5",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Human5.zip"
+  },
+  {
+    "attribs": [
+      "IV",
+      "SV",
+      "OCC",
+      "DEF",
+      "MB",
+      "FM"
+    ],
+    "name": "Human7",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Human7.zip"
+  },
+  {
+    "attribs": [
+      "IV",
+      "SV",
+      "DEF"
+    ],
+    "name": "Human8",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Human8.zip"
+  },
+  {
+    "attribs": [
+      "OCC",
+      "DEF",
+      "OPR"
+    ],
+    "name": "Jogging",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Jogging.zip"
+  },
+  {
+    "attribs": [
+      "IV",
+      "OCC",
+      "IPR",
+      "OPR"
+    ],
+    "name": "KiteSurf",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/KiteSurf.zip"
+  },
+  {
+    "attribs": [
+      "IV",
+      "SV",
+      "OCC",
+      "FM",
+      "OPR",
+      "OV"
+    ],
+    "name": "Lemming",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Lemming.zip"
+  },
+  {
+    "attribs": [
+      "IV"
+    ],
+    "name": "Man",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Man.zip"
+  },
+  {
+    "attribs": [
+      "IV",
+      "DEF",
+      "OPR",
+      "BC"
+    ],
+    "name": "Mhyang",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Mhyang.zip"
+  },
+  {
+    "attribs": [
+      "IPR",
+      "OPR",
+      "BC"
+    ],
+    "name": "MountainBike",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/MountainBike.zip"
+  },
+  {
+    "attribs": [
+      "SV",
+      "OCC",
+      "IPR",
+      "OPR"
+    ],
+    "name": "Rubik",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Rubik.zip"
+  },
+  {
+    "attribs": [
+      "IV",
+      "SV",
+      "OCC",
+      "OPR"
+    ],
+    "name": "Singer1",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Singer1.zip"
+  },
+  {
+    "attribs": [
+      "SV",
+      "DEF",
+      "IPR",
+      "OPR"
+    ],
+    "name": "Skater",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Skater.zip"
+  },
+  {
+    "attribs": [
+      "SV",
+      "DEF",
+      "FM",
+      "IPR",
+      "OPR"
+    ],
+    "name": "Skater2",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Skater2.zip"
+  },
+  {
+    "attribs": [
+      "OCC",
+      "DEF",
+      "BC"
+    ],
+    "name": "Subway",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Subway.zip"
+  },
+  {
+    "attribs": [
+      "OCC",
+      "IPR",
+      "OV"
+    ],
+    "name": "Suv",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Suv.zip"
+  },
+  {
+    "attribs": [
+      "IV",
+      "OCC",
+      "DEF",
+      "MB",
+      "FM",
+      "IPR",
+      "OPR"
+    ],
+    "name": "Tiger1",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Tiger1.zip"
+  },
+  {
+    "attribs": [
+      "SV",
+      "FM",
+      "IPR",
+      "OPR"
+    ],
+    "name": "Toy",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Toy.zip"
+  },
+  {
+    "attribs": [
+      "IV",
+      "SV",
+      "OCC",
+      "DEF"
+    ],
+    "name": "Trans",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Trans.zip"
+  },
+  {
+    "attribs": [
+      "SV",
+      "OPR"
+    ],
+    "name": "Twinnings",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Twinnings.zip"
+  },
+  {
+    "attribs": [
+      "SV",
+      "FM",
+      "IPR"
+    ],
+    "name": "Vase",
+    "url": "http://cvlab.hanyang.ac.kr/tracker_benchmark/seq/Vase.zip"
+  }
+]
