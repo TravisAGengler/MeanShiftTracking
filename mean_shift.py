@@ -13,8 +13,9 @@ from datetime import datetime
 
 # Constants
 BIT_DEPTH = 8
-FRAMERATE = 60
-N_BINS = 32
+#FRAMERATE = 60
+N_BINS = 16
+bin_LUT = {}
 
 def write_results(results, results_dir):
   print(f"Writing results to: {results_dir}")
@@ -121,10 +122,16 @@ def get_constrained_bounds(frame, rect_sc):
 def get_pdf_idx(r_bin, g_bin, b_bin, n_bins):
   return r_bin + n_bins * (g_bin + n_bins * b_bin)
 
-def get_binned_vals(vals, space_min, space_max, n_bins):
+def generate_bin_LUT(space_min, space_max, n_bins):
+  global bin_LUT
+  for v in range(space_min, space_max):
+    bin_LUT[v] = int(np.floor(((v - space_min) / space_max) * n_bins))
+
+def get_binned_vals(vals):
   binned_vals = []
+  global bin_LUT
   for v in vals:
-    b_val = int(np.floor(((v - space_min) / space_max) * n_bins))
+    b_val = bin_LUT[v]
     binned_vals.append(b_val)
   return binned_vals
 
@@ -147,7 +154,7 @@ def get_pdf(frame, rect_c, scale=1):
   for x in range(bounds_x[0], bounds_x[1]):
     for y in range(bounds_y[0], bounds_y[1]):
       # OpenCV stores images in BGR!
-      b, g, r = get_binned_vals(frame[y,x,:], 0, 2**BIT_DEPTH, N_BINS)
+      b, g, r = get_binned_vals(frame[y,x,:])
       x_dist = (x-rect_sc['x_c'])**2 / rect_sc['w']
       y_dist = (y-rect_sc['y_c'])**2 / rect_sc['h']
       norm = x_dist + y_dist
@@ -165,7 +172,7 @@ def shift_target(frame, q, p, rect_c, scale=1):
   bounds_x, bounds_y = get_constrained_bounds(frame, rect_sc)
   for x in range(bounds_x[0], bounds_x[1]):
     for y in range(bounds_y[0], bounds_y[1]):
-      b, g, r = get_binned_vals(frame[y,x,:], 0, 2**BIT_DEPTH, N_BINS)
+      b, g, r = get_binned_vals(frame[y,x,:])
       # Formula 25, weight calculation
       # TODO: This should change with my changes!
       pdf_idx = get_pdf_idx(r, g, b, N_BINS)
@@ -189,69 +196,68 @@ def shift_target(frame, q, p, rect_c, scale=1):
 
 def mean_shift(frame, q, rect_c, scale=1):
   # For scale variance, have the algorithm pick the best scale.
-  #s_min = 0.5*scale
-  #s_max = 2*scale
-  #s_step = (s_max - s_min)/4
-  #d_cutoff = 1
+  s_min = scale-(scale*.05)
+  s_max = scale+(scale*.05)
+  s_step = (s_max - s_min)/8
+  d_cutoff = 1
   x_found = rect_c['x_c']
   y_found = rect_c['y_c']
-
-  #for s in np.arange(s_min, s_max, s_step):
-  s = scale
-  x = rect_c['x_c']
-  y = rect_c['y_c']
-  converged = False
-  n_iterations = 0
-  while not converged:
-    n_iterations += 1
-    r_c = {
-      'x_c' : x, 
-      'y_c' : y, 
-      'w' : rect_c['w'],
-      'h' : rect_c['h']
-    }
-    p = get_pdf(frame, r_c, s)
-    dist = get_pdf_dist_bhattacharyya(p, q)
-    r_shifted = shift_target(frame, q, p, r_c, s)
-    p_shifted = get_pdf(frame, r_shifted, s)
-    dist_shifted = get_pdf_dist_bhattacharyya(p_shifted, q)
-    #print(f'dist: {dist}, dist_shifted: {dist_shifted}')
-
-    # This is step 6 of the algorithm. Supposedly rare to encounter
-    if dist_shifted < dist:
-      print("Setp 6 condition!")
-      print(f" dist_shifted: {dist_shifted} < dist: {dist}")
-      r_shifted = {
-        'x_c' : (r_shifted['x_c'] + x)//2,
-        'y_c' : (r_shifted['y_c'] + y)//2,
-        'w' : r_shifted['w'],
-        'h' : r_shifted['h']
-      }
-
-    # Convergence criteria (Round to same pixel)
-    if r_shifted['x_c'] == x and r_shifted['y_c'] == y:
-      print(f"Converged after {n_iterations} iterations on x: {r_shifted['x_c']}, y: {r_shifted['y_c']}")
-      converged = True
-    else:
-      x = r_shifted['x_c']
-      y = r_shifted['y_c']
-
-    # # Get measures for the best scale
-    # p_shifted = get_pdf(frame, r_shifted, s)
-    # dist = get_pdf_dist_bhattacharyya(p_shifted, q)
-    # #print(f'dist: {dist}')
-    # d = np.sqrt(1-dist)
-    # print(f"d: {d}, d_cutoff: {d_cutoff}")
-    # if d < d_cutoff:
-    #   scale_best = s
-    #   d_cutoff = d
-    #   x_found = x
-    #   y_found = y
-
-  x_found = x
-  y_found = y
   scale_best = scale
 
+  n_iterations = 0
+  n_6_hits = 0
+
+  for s in np.arange(s_min, s_max, s_step):
+    x = rect_c['x_c']
+    y = rect_c['y_c']
+    converged = False
+
+    while not converged:
+      n_iterations += 1
+      r_c = {
+        'x_c' : x, 
+        'y_c' : y, 
+        'w' : rect_c['w'],
+        'h' : rect_c['h']
+      }
+      p = get_pdf(frame, r_c, s)
+      dist = get_pdf_dist_bhattacharyya(p, q)
+      r_shifted = shift_target(frame, q, p, r_c, s)
+      p_shifted = get_pdf(frame, r_shifted, s)
+      dist_shifted = get_pdf_dist_bhattacharyya(p_shifted, q)
+
+      # This is step 6 of the algorithm. Supposedly rare to encounter
+      if dist_shifted < dist:
+        n_6_hits += 1
+        #print("Setp 6 condition!")
+        #print(f" dist_shifted: {dist_shifted} < dist: {dist}")
+        r_shifted = {
+          'x_c' : (r_shifted['x_c'] + x)//2,
+          'y_c' : (r_shifted['y_c'] + y)//2,
+          'w' : r_shifted['w'],
+          'h' : r_shifted['h']
+        }
+
+      # Convergence criteria (Round to same pixel)
+      if r_shifted['x_c'] == x and r_shifted['y_c'] == y:
+        converged = True
+      else:
+        x = r_shifted['x_c']
+        y = r_shifted['y_c']
+
+    # Get measures for the best scale
+    p_shifted = get_pdf(frame, r_shifted, s)
+    dist = get_pdf_dist_bhattacharyya(p_shifted, q)
+    d = np.sqrt(1-dist)
+    #print(f"d: {d}, d_cutoff: {d_cutoff}")
+    if d < d_cutoff:
+      scale_best = s
+      d_cutoff = d
+      x_found = x
+      y_found = y
+
+  #print(f"scale_best: {scale_best}")
+  print(f"Converged after {n_iterations} iterations on x: {x_found}, y: {y_found} with {n_6_hits} step 6 conditions ")
   return ({
       'x_c' : x_found,
       'y_c' : y_found,
@@ -278,13 +284,16 @@ def draw_rects(img, rects):
 def display_results(frame, rects):
   frame_rects = draw_rects(frame, rects)
   cv2.imshow('',frame_rects)
-  cv2.waitKey(1000//FRAMERATE)
+  cv2.waitKey(1)
 
 def process(sequence_path):
   seq = zipfile.ZipFile(sequence_path, 'r')
 
   n_frames = get_frame_count(seq)
   ground_truth = read_ground_truth(seq)
+
+  # I found that performance is MUCH better with a lookup table for binning
+  generate_bin_LUT(0, 2**BIT_DEPTH, N_BINS)
 
   results = {}
   results['name'] = os.path.basename(sequence_path)
@@ -313,14 +322,14 @@ def process(sequence_path):
     else:
       # Get the predicted bounding rectangles
       my_method_rect_c = truth_rect_c
-      mean_shift_rect_c, mean_shift_scale = mean_shift(frame, q, mean_shift_rect_c, mean_shift_scale)
-      my_method_rect_c, my_method_scale = my_method(frame, q, my_method_rect_c, my_method_scale)
+      mean_shift_rect_c, mean_shift_scale = mean_shift(frame, q, mean_shift_rect_c, 1)
+      my_method_rect_c, my_method_scale = my_method(frame, q, my_method_rect_c, 1)
 
     # Gather rects and uncenter them for rendering
     rects = [
       { 'rect': rect_uncenter(truth_rect_c), 'color' : (255, 0, 0) },
-      { 'rect': rect_uncenter(mean_shift_rect_c), 'color' : (0, 255, 0) },
-      { 'rect': rect_uncenter(my_method_rect_c), 'color' : (0, 0, 255) }
+      { 'rect': rect_uncenter(rect_scale(mean_shift_rect_c, mean_shift_scale)), 'color' : (0, 255, 0) },
+      { 'rect': rect_uncenter(rect_scale(my_method_rect_c, my_method_scale)), 'color' : (0, 0, 255) }
     ]
 
     # Do the analysis here, accumulate into results
