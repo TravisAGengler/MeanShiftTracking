@@ -15,7 +15,7 @@ from datetime import datetime
 BIT_DEPTH = 8
 #FRAMERATE = 60
 N_BINS = 16
-bin_LUT = {}
+bin_LUT = np.zeros(1)
 
 def write_results(results, results_dir):
   print(f"Writing results to: {results_dir}")
@@ -120,20 +120,19 @@ def get_constrained_bounds(frame, rect_sc):
   return bounds_x, bounds_y
 
 def get_pdf_idx(r_bin, g_bin, b_bin, n_bins):
-  return r_bin + n_bins * (g_bin + n_bins * b_bin)
+  return 
 
 def generate_bin_LUT(space_min, space_max, n_bins):
   global bin_LUT
+  bin_LUT = np.zeros(space_max-space_min+1).astype(int)
   for v in range(space_min, space_max):
     bin_LUT[v] = int(np.floor(((v - space_min) / space_max) * n_bins))
+  print(bin_LUT)
 
-def get_binned_vals(vals):
-  binned_vals = []
+def get_pdf_idx(b, g, r, n_bins):
+  # OpenCV stores images in BGR!
   global bin_LUT
-  for v in vals:
-    b_val = bin_LUT[v]
-    binned_vals.append(b_val)
-  return binned_vals
+  return bin_LUT[r] + n_bins * (bin_LUT[g] + n_bins * bin_LUT[b])
 
 # Formula 5
 def gauss_profile_d(x):
@@ -153,13 +152,11 @@ def get_pdf(frame, rect_c, scale=1):
   bounds_x, bounds_y = get_constrained_bounds(frame, rect_sc)
   for x in range(bounds_x[0], bounds_x[1]):
     for y in range(bounds_y[0], bounds_y[1]):
-      # OpenCV stores images in BGR!
-      b, g, r = get_binned_vals(frame[y,x,:])
       x_dist = (x-rect_sc['x_c'])**2 / rect_sc['w']
       y_dist = (y-rect_sc['y_c'])**2 / rect_sc['h']
       norm = x_dist + y_dist
       k = gauss_profile(norm)
-      pdf_idx = get_pdf_idx(r, g, b, N_BINS)
+      pdf_idx = get_pdf_idx(*frame[y,x,:], N_BINS)
       pdf[pdf_idx] = pdf[pdf_idx] + k
       C = C + k # Accumulate the normalization constant!
   return np.divide(pdf, C)
@@ -172,10 +169,9 @@ def shift_target(frame, q, p, rect_c, scale=1):
   bounds_x, bounds_y = get_constrained_bounds(frame, rect_sc)
   for x in range(bounds_x[0], bounds_x[1]):
     for y in range(bounds_y[0], bounds_y[1]):
-      b, g, r = get_binned_vals(frame[y,x,:])
       # Formula 25, weight calculation
       # TODO: This should change with my changes!
-      pdf_idx = get_pdf_idx(r, g, b, N_BINS)
+      pdf_idx = get_pdf_idx(*frame[y,x,:], N_BINS)
       w = np.sqrt(q[pdf_idx]/p[pdf_idx])
       x_dist = (x-rect_sc['x_c'])**2 / rect_sc['w']
       y_dist = (y-rect_sc['y_c'])**2 / rect_sc['h']
