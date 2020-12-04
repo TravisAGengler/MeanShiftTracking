@@ -14,8 +14,9 @@ from datetime import datetime
 # Constants
 BIT_DEPTH = 8
 #FRAMERATE = 60
-N_BINS = 16
+N_BINS = 32
 bin_LUT = np.zeros(1)
+KERNEL_CONST = np.power(2*np.pi, -3/2)
 
 def write_results(results, results_dir):
   print(f"Writing results to: {results_dir}")
@@ -72,197 +73,118 @@ def read_ground_truth(seq):
     })
   return gt
 
-def rect_center(rect):
-  return {
-    'x_c' : rect['x'] + rect['w']//2,
-    'y_c' : rect['y'] + rect['h']//2,
-    'w' : rect['w'],
-    'h' : rect['h']
-  }
-
-def rect_uncenter(rect_c):
-  return {
-    'x' : rect_c['x_c'] - rect_c['w']//2,
-    'y' : rect_c['y_c'] - rect_c['h']//2,
-    'w' : rect_c['w'],
-    'h' : rect_c['h']
-  }
-
-def rect_scale(rect_c, scale):
-  return {
-      'x_c' : rect_c['x_c'],
-      'y_c' : rect_c['y_c'],
-      'w' : int(np.floor(rect_c['w']*scale)),
-      'h' : int(np.floor(rect_c['h']*scale))
-    }
-
-def get_constrained_bounds(frame, rect_sc):
-  # Make sure that the bounds are constrained to the dimensions of the frame
-  #print(f"rect: {rect}")
-  
-  h, w, _ = frame.shape
-
-  x_r = rect_sc['x_c']+rect_sc['w']//2
-  x_l = rect_sc['x_c']-rect_sc['w']//2
-  y_d = rect_sc['y_c']+rect_sc['h']//2
-  y_u = rect_sc['y_c']-rect_sc['h']//2
-  #print(f"w: {w} h:{h}")
-  #print(f"x_r: {x_r} x_l: {x_l} y_d: {y_d} y_u: {y_u}")
-
-  x_l_b = max(0, min(x_l, w))
-  x_r_b = min(w, x_r)
-  y_u_b = max(0, min(y_u, h))
-  y_d_b = min(h, y_d)
-
-  bounds_x = [x_l_b, x_r_b]
-  bounds_y = [y_u_b, y_d_b]
-
-  return bounds_x, bounds_y
-
-def get_pdf_idx(r_bin, g_bin, b_bin, n_bins):
-  return 
-
 def generate_bin_LUT(space_min, space_max, n_bins):
   global bin_LUT
   bin_LUT = np.zeros(space_max-space_min+1).astype(int)
-  for v in range(space_min, space_max):
-    bin_LUT[v] = int(np.floor(((v - space_min) / space_max) * n_bins))
+  for v in range(space_min, space_max+1):
+    bin_LUT[v] = min(n_bins-1, int(np.floor(((v - space_min) / space_max) * n_bins)))
   print(bin_LUT)
 
-def get_pdf_idx(b, g, r, n_bins):
-  # OpenCV stores images in BGR!
-  global bin_LUT
-  return bin_LUT[r] + n_bins * (bin_LUT[g] + n_bins * bin_LUT[b])
-
-# Formula 5
-def gauss_profile_d(x):
-  return 0.5*(np.exp(-0.5*x)/(2*np.pi))
-
-def gauss_profile(x):
-  return np.exp(-0.5*x)/(2*np.pi)
-
-def get_pdf_dist_bhattacharyya(pdf_a, pdf_b):
-  return np.sqrt(np.sum(np.multiply(pdf_a, pdf_b)))
-
-# Formulas 19, 20
-def get_pdf(frame, rect_c, scale=1):
-  pdf = np.zeros(N_BINS**3)
-  C = 0 # This is the normalization constant
-  rect_sc = rect_scale(rect_c, scale)
-  bounds_x, bounds_y = get_constrained_bounds(frame, rect_sc)
-  for x in range(bounds_x[0], bounds_x[1]):
-    for y in range(bounds_y[0], bounds_y[1]):
-      x_dist = (x-rect_sc['x_c'])**2 / rect_sc['w']
-      y_dist = (y-rect_sc['y_c'])**2 / rect_sc['h']
-      norm = x_dist + y_dist
-      k = gauss_profile(norm)
-      pdf_idx = get_pdf_idx(*frame[y,x,:], N_BINS)
-      pdf[pdf_idx] = pdf[pdf_idx] + k
-      C = C + k # Accumulate the normalization constant!
-  return np.divide(pdf, C)
-
-def shift_target(frame, q, p, rect_c, scale=1):
-  x_shift = 0
-  y_shift = 0
-  C = 0 # This is the normalization constant
-  rect_sc = rect_scale(rect_c, scale)
-  bounds_x, bounds_y = get_constrained_bounds(frame, rect_sc)
-  for x in range(bounds_x[0], bounds_x[1]):
-    for y in range(bounds_y[0], bounds_y[1]):
-      # Formula 25, weight calculation
-      # TODO: This should change with my changes!
-      pdf_idx = get_pdf_idx(*frame[y,x,:], N_BINS)
-      w = np.sqrt(q[pdf_idx]/p[pdf_idx])
-      x_dist = (x-rect_sc['x_c'])**2 / rect_sc['w']
-      y_dist = (y-rect_sc['y_c'])**2 / rect_sc['h']
-      norm = x_dist + y_dist
-      g = gauss_profile_d(norm)
-      # Formula 25. This is the mean shift!
-      x_shift = x_shift + x*w*g
-      y_shift = y_shift + y*w*g
-      C = C + w*g
-  x_s = int(np.floor(x_shift/C))
-  y_s = int(np.floor(y_shift/C))
+def rect_2_rad(rect):
+  h0, h1 = (int(np.ceil(rect['w']/2)), int(np.ceil(rect['h']/2)))
   return {
-    'x_c' : x_s,
-    'y_c' : y_s,
-    'w' : rect_sc['w'],
-    'h' : rect_sc['h']
+    'x0' : rect['x'] + h0,
+    'x1' : rect['y'] + h1,
+    'h0' : h0,
+    'h1' : h1
   }
 
-def mean_shift(frame, q, rect_c, scale=1):
-  # For scale variance, have the algorithm pick the best scale.
-  s_min = scale-(scale*.05)
-  s_max = scale+(scale*.05)
-  s_step = (s_max - s_min)/8
-  d_cutoff = 1
-  x_found = rect_c['x_c']
-  y_found = rect_c['y_c']
-  scale_best = scale
+def rad_2_rect(rad):
+  return {
+    'x' : rad['x0'] - rad['h0'],
+    'y' : rad['x1'] - rad['h1'],
+    'w' : rad['h0'] * 2,
+    'h' : rad['h1'] * 2
+  }
 
-  n_iterations = 0
-  n_6_hits = 0
+def get_g(norm_x_2):
+  return 0.5*np.exp(-0.5*norm_x_2)*KERNEL_CONST
 
-  for s in np.arange(s_min, s_max, s_step):
-    x = rect_c['x_c']
-    y = rect_c['y_c']
-    converged = False
+def get_k(norm_x_2):
+  return np.exp(-0.5*norm_x_2)*KERNEL_CONST
 
-    while not converged:
-      n_iterations += 1
-      r_c = {
-        'x_c' : x, 
-        'y_c' : y, 
-        'w' : rect_c['w'],
-        'h' : rect_c['h']
+def get_rho(p, q):
+  return np.sum(np.sqrt(np.multiply(p, q)))
+
+def get_norm2(x, xi, h):
+  return np.linalg.norm([(xi[0]-x[0])/h[0], (xi[1]-x[1])/h[1]])
+
+def rgb_2_u(bgr):
+  b, g, r = bgr
+  return bin_LUT[r] + N_BINS * (bin_LUT[g] + N_BINS * bin_LUT[b])
+
+def round_pt(x):
+  return (int(np.round(x[0])), int(np.round(x[1])))
+
+def get_roi(x, h, img_dim):
+  x1 = min(img_dim[0], x[0]+h[0])
+  x0 = max(0, min(x[0]-h[0], img_dim[0]))
+  y1 = min(img_dim[1], x[1]+h[1])
+  y0 = max(0, min(x[1]-h[1], img_dim[1]))
+  return (x0, x1), (y0, y1)
+
+def get_q(frame, x, h):
+  pdf = np.zeros(N_BINS**3)
+  C = 0 # This is the normalization constant
+  img_h, img_w, _ = frame.shape
+  xb, yb = get_roi(x, h, (img_w, img_h))
+  for xi in range(xb[0], xb[1]):
+    for yi in range(yb[0], yb[1]):
+      norm = get_norm2(x, (xi, yi), h)
+      k = get_k(norm)
+      u = rgb_2_u(frame[yi,xi,:])
+      pdf[u] += k
+      C += k # Accumulate the normalization constant!
+  return np.divide(pdf, C)
+
+def get_p(frame, y, h):
+  return get_q(frame, y, h)
+
+def mean_shift(frame, q, y, h):
+  y0 = y
+  while True:
+    p0 = get_p(frame, y0, h)
+    rho0 = get_rho(p0, q)
+
+    numx = numy = den = 0
+    img_h, img_w, _ = frame.shape
+    xb, yb = get_roi(y0, h, (img_w, img_h))
+    for xi in range(xb[0], xb[1]):
+      for yi in range(yb[0], yb[1]):
+        u = rgb_2_u(frame[yi,xi,:])
+        wi = np.sqrt(q[u]/p0[u])
+        norm = get_norm2(y0, (xi, yi), h)
+        g = get_g(norm)
+        numx += xi*wi*g
+        numy += yi*wi*g
+        den += wi*g
+    y1 = round_pt((numx/den, numy/den))
+
+    p1 = get_p(frame, y1, h)
+    rho1 = get_rho(p1, q)
+
+    if rho1 < rho0:
+      y1 = round_pt( ((y0[0]+y1[0])/2, (y0[1]+y1[1])/2) )
+      p1 = get_p(frame, y1, h)
+      rho1 = get_rho(p1, q)
+
+    if y1 == y0:
+      return {
+        'x0' : y1[0],
+        'x1' : y1[1],
+        'h0' : h[0],
+        'h1' : h[1],
       }
-      p = get_pdf(frame, r_c, s)
-      dist = get_pdf_dist_bhattacharyya(p, q)
-      r_shifted = shift_target(frame, q, p, r_c, s)
-      p_shifted = get_pdf(frame, r_shifted, s)
-      dist_shifted = get_pdf_dist_bhattacharyya(p_shifted, q)
+    else:
+      y0 = y1
 
-      # This is step 6 of the algorithm. Supposedly rare to encounter
-      if dist_shifted < dist:
-        n_6_hits += 1
-        #print("Setp 6 condition!")
-        #print(f" dist_shifted: {dist_shifted} < dist: {dist}")
-        r_shifted = {
-          'x_c' : (r_shifted['x_c'] + x)//2,
-          'y_c' : (r_shifted['y_c'] + y)//2,
-          'w' : r_shifted['w'],
-          'h' : r_shifted['h']
-        }
-
-      # Convergence criteria (Round to same pixel)
-      if r_shifted['x_c'] == x and r_shifted['y_c'] == y:
-        converged = True
-      else:
-        x = r_shifted['x_c']
-        y = r_shifted['y_c']
-
-    # Get measures for the best scale
-    p_shifted = get_pdf(frame, r_shifted, s)
-    dist = get_pdf_dist_bhattacharyya(p_shifted, q)
-    d = np.sqrt(1-dist)
-    #print(f"d: {d}, d_cutoff: {d_cutoff}")
-    if d < d_cutoff:
-      scale_best = s
-      d_cutoff = d
-      x_found = x
-      y_found = y
-
-  #print(f"scale_best: {scale_best}")
-  print(f"Converged after {n_iterations} iterations on x: {x_found}, y: {y_found} with {n_6_hits} step 6 conditions ")
-  return ({
-      'x_c' : x_found,
-      'y_c' : y_found,
-      'w' : rect_c['w'],
-      'h' : rect_c['h']
-    }, scale_best)
-
-def my_method(frame, q, rect_c, scale=1):
-  return (rect_c, scale)
+def my_method(frame, q, y, h):
+  return {
+        'x0' : y[0],
+        'x1' : y[1],
+        'h0' : h[0],
+        'h1' : h[1],
+      }
 
 def get_frame_results(truth_rect, rects):
   return {}
@@ -294,38 +216,44 @@ def process(sequence_path):
   results = {}
   results['name'] = os.path.basename(sequence_path)
 
-  mean_shift_scale = 1
-  my_method_scale = 1
-
   for frame_num in range(0, n_frames):
     print(f"Working on frame {frame_num}")
     # Get the frame
     frame = read_frame(seq, frame_num)
     truth_rect = ground_truth[frame_num]
-    # Convert the rect to a centered rect. All functions use centered
-    truth_rect_c = rect_center(truth_rect)
+    # Convert the rect to a radius. All functions use centered
+    truth_rad = rect_2_rad(truth_rect)
 
     if frame_num == 0:
       # Get the target_info from the initial frame
       # Just set initil bounding rectangles to the ground truth
       h, w, d = frame.shape
-      print(f"Frame dimensions: ({w}, {h})")
-      print(f"Frame Channels {d}")
-      print(f"Target location x: {truth_rect_c['x_c']}, y: {truth_rect_c['y_c']}")
-      q = get_pdf(frame, truth_rect_c)
-      mean_shift_rect_c = truth_rect_c
-      my_method_rect_c = truth_rect_c
+      print(f"Frame dimensions: ({w}, {h}, {d})")
+      
+      y0 = (truth_rad['x0'], truth_rad['x1'])
+      h = (truth_rad['h0'], truth_rad['h1'])
+      print(f"Target location: ({y0[0]}, {y0[1]})")
+      print(f"Target dimensions: ({h[0]}, {h[1]})")
+      
+      q = get_q(frame, y0, h)
+      mean_shift_rad = truth_rad
+      my_method_rad = truth_rad
     else:
       # Get the predicted bounding rectangles
-      my_method_rect_c = truth_rect_c
-      mean_shift_rect_c, mean_shift_scale = mean_shift(frame, q, mean_shift_rect_c, 1)
-      my_method_rect_c, my_method_scale = my_method(frame, q, my_method_rect_c, 1)
+      y0 = (mean_shift_rad['x0'], mean_shift_rad['x1'])
+      h = (mean_shift_rad['h0'], mean_shift_rad['h1'])
+      print(f"Target location: ({y0[0]}, {y0[1]})")
+      print(f"Target dimensions: ({h[0]}, {h[1]})")
+      
+      mean_shift_rad = mean_shift(frame, q, y0, h)
+      #my_method_rad = my_method(frame, q, y0, h)
+      my_method_rad = truth_rad
 
-    # Gather rects and uncenter them for rendering
+    # Gather rects for rendering
     rects = [
-      { 'rect': rect_uncenter(truth_rect_c), 'color' : (255, 0, 0) },
-      { 'rect': rect_uncenter(rect_scale(mean_shift_rect_c, mean_shift_scale)), 'color' : (0, 255, 0) },
-      { 'rect': rect_uncenter(rect_scale(my_method_rect_c, my_method_scale)), 'color' : (0, 0, 255) }
+      { 'rect': rad_2_rect(truth_rad), 'color' : (255, 0, 0) },
+      { 'rect': rad_2_rect(mean_shift_rad), 'color' : (0, 255, 0) },
+      { 'rect': rad_2_rect(my_method_rad), 'color' : (0, 0, 255) }
     ]
 
     # Do the analysis here, accumulate into results
