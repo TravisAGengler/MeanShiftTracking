@@ -15,8 +15,13 @@ from datetime import datetime
 BIT_DEPTH = 8
 #FRAMERATE = 60
 N_BINS = 32
-bin_LUT = np.zeros(1)
 KERNEL_CONST = np.power(2*np.pi, -3/2)
+
+# Globals
+bin_LUT = np.zeros(1)
+q = np.zeros(np.power(N_BINS, 3))
+p0 = np.zeros(np.power(N_BINS, 3))
+p1 = np.zeros(np.power(N_BINS, 3))
 
 def write_results(results, results_dir):
   print(f"Writing results to: {results_dir}")
@@ -123,8 +128,8 @@ def get_roi(x, h, img_dim):
   y0 = max(0, min(x[1]-h[1], img_dim[1]))
   return (x0, x1), (y0, y1)
 
-def get_q(frame, x, h):
-  pdf = np.zeros(N_BINS**3)
+def get_hist_inplace(hist, frame, x, h):
+  hist.fill(0) # Need to clear out previous values
   C = 0 # This is the normalization constant
   img_h, img_w, _ = frame.shape
   xb, yb = get_roi(x, h, (img_w, img_h))
@@ -133,17 +138,26 @@ def get_q(frame, x, h):
       norm = get_norm2(x, (xi, yi), h)
       k = get_k(norm)
       u = rgb_2_u(frame[yi,xi,:])
-      pdf[u] += k
+      hist[u] += k
       C += k # Accumulate the normalization constant!
-  return np.divide(pdf, C)
+  hist /= C
 
-def get_p(frame, y, h):
-  return get_q(frame, y, h)
+def get_q(frame, x, h):
+  global q
+  get_hist_inplace(q, frame, x, h)
 
-def mean_shift(frame, q, y, h):
+def get_p0(frame, y, h):
+  global p0
+  get_hist_inplace(p0, frame, y, h)
+
+def get_p1(frame, y, h):
+  global p1
+  get_hist_inplace(p1, frame, y, h)
+
+def mean_shift(frame, y, h):
   y0 = y
   while True:
-    p0 = get_p(frame, y0, h)
+    get_p0(frame, y0, h)
     rho0 = get_rho(p0, q)
 
     numx = numy = den = 0
@@ -160,12 +174,12 @@ def mean_shift(frame, q, y, h):
         den += wi*g
     y1 = round_pt((numx/den, numy/den))
 
-    p1 = get_p(frame, y1, h)
+    get_p1(frame, y1, h)
     rho1 = get_rho(p1, q)
 
     if rho1 < rho0:
       y1 = round_pt( ((y0[0]+y1[0])/2, (y0[1]+y1[1])/2) )
-      p1 = get_p(frame, y1, h)
+      get_p1(frame, y1, h)
       rho1 = get_rho(p1, q)
 
     if y1 == y0:
@@ -235,7 +249,7 @@ def process(sequence_path):
       print(f"Target location: ({y0[0]}, {y0[1]})")
       print(f"Target dimensions: ({h[0]}, {h[1]})")
       
-      q = get_q(frame, y0, h)
+      get_q(frame, y0, h)
       mean_shift_rad = truth_rad
       my_method_rad = truth_rad
     else:
@@ -245,7 +259,7 @@ def process(sequence_path):
       print(f"Target location: ({y0[0]}, {y0[1]})")
       print(f"Target dimensions: ({h[0]}, {h[1]})")
       
-      mean_shift_rad = mean_shift(frame, q, y0, h)
+      mean_shift_rad = mean_shift(frame, y0, h)
       #my_method_rad = my_method(frame, q, y0, h)
       my_method_rad = truth_rad
 
