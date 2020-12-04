@@ -108,6 +108,9 @@ def get_g(norm_x_2):
 def get_k(norm_x_2):
   return np.exp(-0.5*norm_x_2)*KERNEL_CONST
 
+def get_d(rho):
+  return np.sqrt(1-rho)
+
 def get_rho(p, q):
   return np.sum(np.sqrt(np.multiply(p, q)))
 
@@ -154,43 +157,63 @@ def get_p1(frame, y, h):
   global p1
   get_hist_inplace(p1, frame, y, h)
 
-def mean_shift(frame, y, h):
+def mean_shift(frame, y, h0):
   y0 = y
-  while True:
-    get_p0(frame, y0, h)
-    rho0 = get_rho(p0, q)
 
-    numx = numy = den = 0
-    img_h, img_w, _ = frame.shape
-    xb, yb = get_roi(y0, h, (img_w, img_h))
-    for xi in range(xb[0], xb[1]):
-      for yi in range(yb[0], yb[1]):
-        u = rgb_2_u(frame[yi,xi,:])
-        wi = np.sqrt(q[u]/p0[u])
-        norm = get_norm2(y0, (xi, yi), h)
-        g = get_g(norm)
-        numx += xi*wi*g
-        numy += yi*wi*g
-        den += wi*g
-    y1 = round_pt((numx/den, numy/den))
+  s_h00 = int(np.round(h0[0]*.10))
+  s_h01 = int(np.round(h0[1]*.10))
+  h_n10 = (h0[0]-s_h00, h0[1]-s_h01)
+  h_p10 = (h0[0]+s_h00, h0[1]+s_h01)
+  hs = [h_n10, h0, h_p10]
 
-    get_p1(frame, y1, h)
-    rho1 = get_rho(p1, q)
+  best_d = 100
+  best_h = h0
+  best_y = y0
 
-    if rho1 < rho0:
-      y1 = round_pt( ((y0[0]+y1[0])/2, (y0[1]+y1[1])/2) )
+  for h in hs:
+    converged = False
+    while not converged:
+      get_p0(frame, y0, h)
+      rho0 = get_rho(p0, q)
+
+      numx = numy = den = 0
+      img_h, img_w, _ = frame.shape
+      xb, yb = get_roi(y0, h, (img_w, img_h))
+      for xi in range(xb[0], xb[1]):
+        for yi in range(yb[0], yb[1]):
+          u = rgb_2_u(frame[yi,xi,:])
+          wi = np.sqrt(q[u]/p0[u])
+          norm = get_norm2(y0, (xi, yi), h)
+          g = get_g(norm)
+          numx += xi*wi*g
+          numy += yi*wi*g
+          den += wi*g
+      y1 = round_pt((numx/den, numy/den))
+
       get_p1(frame, y1, h)
       rho1 = get_rho(p1, q)
 
-    if y1 == y0:
-      return {
-        'x0' : y1[0],
-        'x1' : y1[1],
-        'h0' : h[0],
-        'h1' : h[1],
-      }
-    else:
-      y0 = y1
+      if rho1 < rho0:
+        y1 = round_pt( ((y0[0]+y1[0])/2, (y0[1]+y1[1])/2) )
+        get_p1(frame, y1, h)
+        rho1 = get_rho(p1, q)
+
+      if y1 == y0:
+        converged = True
+        d = get_d(rho1)
+        if d < best_d:
+          best_y = y1
+          best_h = h
+          best_d = d
+      else:
+        y0 = y1
+
+  return {
+    'x0' : best_y[0],
+    'x1' : best_y[1],
+    'h0' : best_h[0],
+    'h1' : best_h[1],
+  }
 
 def my_method(frame, q, y, h):
   return {
