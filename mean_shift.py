@@ -7,6 +7,7 @@ import json
 import numpy as np
 import os
 import re
+import time
 import zipfile
 
 from datetime import datetime
@@ -16,6 +17,7 @@ BIT_DEPTH = 8
 #FRAMERATE = 60
 N_BINS = 32
 KERNEL_CONST = np.power(2*np.pi, -3/2)
+EPSILON = np.finfo(float).eps
 
 # Globals
 bin_LUT = np.zeros(1)
@@ -103,10 +105,18 @@ def rad_2_rect(rad):
   }
 
 def get_g(norm_x_2):
-  return 0.5*np.exp(-0.5*norm_x_2)*KERNEL_CONST
+  if norm_x_2 < 1:
+    return 0.75
+  if norm_x_2 == 1:
+    return 0.375
+  return EPSILON
+  #return 0.5*np.exp(-0.5*norm_x_2)*KERNEL_CONST
 
 def get_k(norm_x_2):
-  return np.exp(-0.5*norm_x_2)*KERNEL_CONST
+  if norm_x_2 < 1:
+    return 0.75*(1-norm_x_2)
+  return EPSILON
+  #return np.exp(-0.5*norm_x_2)*KERNEL_CONST
 
 def get_d(rho):
   return np.sqrt(1-rho)
@@ -133,7 +143,7 @@ def get_roi(x, h, img_dim):
 
 def get_hist_inplace(hist, frame, x, h):
   hist.fill(0) # Need to clear out previous values
-  C = 0 # This is the normalization constant
+  C = EPSILON # This is the normalization constant
   img_h, img_w, _ = frame.shape
   xb, yb = get_roi(x, h, (img_w, img_h))
   for xi in range(xb[0], xb[1]):
@@ -158,25 +168,27 @@ def get_p1(frame, y, h):
   get_hist_inplace(p1, frame, y, h)
 
 def mean_shift(frame, y, h0):
+  start_time = time.time()
   y0 = y
 
-  s_h00 = int(np.round(h0[0]*.10))
-  s_h01 = int(np.round(h0[1]*.10))
-  h_n10 = (h0[0]-s_h00, h0[1]-s_h01)
-  h_p10 = (h0[0]+s_h00, h0[1]+s_h01)
+  s_h = round_pt((h0[0]*.10, h0[1]*.10))
+  h_n10 = (h0[0]-s_h[0], h0[1]-s_h[1])
+  h_p10 = (h0[0]+s_h[0], h0[1]+s_h[1])
   hs = [h_n10, h0, h_p10]
 
   best_d = 100
   best_h = h0
   best_y = y0
+  n_iterations = 0
 
   for h in hs:
     converged = False
     while not converged:
+      n_iterations += 1
       get_p0(frame, y0, h)
       rho0 = get_rho(p0, q)
 
-      numx = numy = den = 0
+      numx = numy = den = EPSILON
       img_h, img_w, _ = frame.shape
       xb, yb = get_roi(y0, h, (img_w, img_h))
       for xi in range(xb[0], xb[1]):
@@ -198,7 +210,7 @@ def mean_shift(frame, y, h0):
         get_p1(frame, y1, h)
         rho1 = get_rho(p1, q)
 
-      if y1 == y0:
+      if y1 == y0 or n_iterations > 50:
         converged = True
         d = get_d(rho1)
         if d < best_d:
@@ -208,22 +220,30 @@ def mean_shift(frame, y, h0):
       else:
         y0 = y1
 
-  return {
+  print(f"Converged after {n_iterations} iterations")
+  return ({
     'x0' : best_y[0],
     'x1' : best_y[1],
     'h0' : best_h[0],
     'h1' : best_h[1],
-  }
+  }, {
+    'iterations' : n_iterations,
+    'time' : time.time() - start_time
+  })
 
 def my_method(frame, q, y, h):
-  return {
+  start_time = time.time()
+  return ({
         'x0' : y[0],
         'x1' : y[1],
         'h0' : h[0],
         'h1' : h[1],
-      }
+      }, { 
+        'iterations' : 0,
+        'time' : time.time() - start_time
+      })
 
-def get_frame_results(truth_rect, rects):
+def get_frame_results(truth_rect, rects, frame_rects, mean_shift_stats, my_method_stats):
   return {}
 
 def draw_rects(img, rects):
@@ -240,6 +260,7 @@ def display_results(frame, rects):
   frame_rects = draw_rects(frame, rects)
   cv2.imshow('',frame_rects)
   cv2.waitKey(1)
+  return frame_rects
 
 def process(sequence_path):
   seq = zipfile.ZipFile(sequence_path, 'r')
@@ -275,6 +296,12 @@ def process(sequence_path):
       get_q(frame, y0, h)
       mean_shift_rad = truth_rad
       my_method_rad = truth_rad
+      mean_shift_stats = {
+        'iterations' : 0
+      }
+      my_method_stats = {
+        'iterations' : 0
+      }
     else:
       # Get the predicted bounding rectangles
       y0 = (mean_shift_rad['x0'], mean_shift_rad['x1'])
@@ -282,7 +309,7 @@ def process(sequence_path):
       print(f"Target location: ({y0[0]}, {y0[1]})")
       print(f"Target dimensions: ({h[0]}, {h[1]})")
       
-      mean_shift_rad = mean_shift(frame, y0, h)
+      mean_shift_rad, mean_shift_stats = mean_shift(frame, y0, h)
       #my_method_rad = my_method(frame, q, y0, h)
       my_method_rad = truth_rad
 
@@ -293,12 +320,12 @@ def process(sequence_path):
       { 'rect': rad_2_rect(my_method_rad), 'color' : (0, 0, 255) }
     ]
 
-    # Do the analysis here, accumulate into results
-    res = get_frame_results(rects[0], rects[1:])
-    results[f'frame_{frame_num}'] = res
-
     # Show frames here if we want to!
-    display_results(frame, rects)
+    frame_rects = display_results(frame, rects)
+
+    # Do the analysis here, accumulate into results
+    res = get_frame_results(rects[0], rects[1:], frame_rects, mean_shift_stats, my_method_stats)
+    results[f'frame_{frame_num}'] = res
 
   return results
 
