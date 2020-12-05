@@ -11,6 +11,7 @@ import time
 import zipfile
 
 from datetime import datetime
+from scipy.spatial import distance
 
 # Constants
 BIT_DEPTH = 8
@@ -24,6 +25,10 @@ bin_LUT = np.zeros(1)
 q = np.zeros(np.power(N_BINS, 3))
 p0 = np.zeros(np.power(N_BINS, 3))
 p1 = np.zeros(np.power(N_BINS, 3))
+
+q_mine = np.zeros(np.power(N_BINS, 3))
+p0_mine = np.zeros(np.power(N_BINS, 3))
+p1_mine = np.zeros(np.power(N_BINS, 3))
 
 def write_results(results, results_dir):
   print(f"Writing results to: {results_dir}")
@@ -104,26 +109,6 @@ def rad_2_rect(rad):
     'h' : rad['h1'] * 2
   }
 
-def get_g(norm_x_2):
-  if norm_x_2 < 1:
-    return 0.75
-  if norm_x_2 == 1:
-    return 0.375
-  return EPSILON
-  #return 0.5*np.exp(-0.5*norm_x_2)*KERNEL_CONST
-
-def get_k(norm_x_2):
-  if norm_x_2 < 1:
-    return 0.75*(1-norm_x_2)
-  return EPSILON
-  #return np.exp(-0.5*norm_x_2)*KERNEL_CONST
-
-def get_d(rho):
-  return np.sqrt(1-rho)
-
-def get_rho(p, q):
-  return np.sum(np.sqrt(np.multiply(p, q)))
-
 def get_norm2(x, xi, h):
   return np.linalg.norm([(xi[0]-x[0])/h[0], (xi[1]-x[1])/h[1]])
 
@@ -140,6 +125,26 @@ def get_roi(x, h, img_dim):
   y1 = min(img_dim[1], x[1]+h[1])
   y0 = max(0, min(x[1]-h[1], img_dim[1]))
   return (x0, x1), (y0, y1)
+
+# These functions are the papers method
+
+def get_g(norm_x_2):
+  if norm_x_2 < 1:
+    return 0.75
+  if norm_x_2 == 1:
+    return 0.375
+  return EPSILON
+
+def get_k(norm_x_2):
+  if norm_x_2 < 1:
+    return 0.75*(1-norm_x_2)
+  return EPSILON
+
+def get_rho(p, q):
+  return np.sum(np.sqrt(np.multiply(p, q)))
+
+def get_d(rho):
+  return np.sqrt(1-rho)
 
 def get_hist_inplace(hist, frame, x, h):
   hist.fill(0) # Need to clear out previous values
@@ -231,17 +236,119 @@ def mean_shift(frame, y, h0):
     'time' : time.time() - start_time
   })
 
-def my_method(frame, q, y, h):
+# These functions are my method
+
+def get_g_gauss(norm_x_2):
+  if norm_x_2 < 1:
+    return 0.75
+  if norm_x_2 == 1:
+    return 0.375
+  return EPSILON
+  #return 0.5*np.exp(-0.5*norm_x_2)*KERNEL_CONST
+
+def get_k_gauss(norm_x_2):
+  if norm_x_2 < 1:
+    return 0.75*(1-norm_x_2)
+  return EPSILON
+  #return np.exp(-0.5*norm_x_2)*KERNEL_CONST
+
+def get_rho_jensen_shannon(p, q):
+  #return np.sum(np.sqrt(np.multiply(p, q)))
+  return distance.jensenshannon(p,q)
+
+def get_d_jensen_shannon(rho):
+  #return np.sqrt(1-rho)
+  return np.sqrt(rho)
+
+def get_hist_inplace_mine(hist, frame, x, h):
+  hist.fill(0) # Need to clear out previous values
+  C = EPSILON # This is the normalization constant
+  img_h, img_w, _ = frame.shape
+  xb, yb = get_roi(x, h, (img_w, img_h))
+  for xi in range(xb[0], xb[1]):
+    for yi in range(yb[0], yb[1]):
+      norm = get_norm2(x, (xi, yi), h)
+      k = get_k_gauss(norm)
+      u = rgb_2_u(frame[yi,xi,:])
+      hist[u] += k
+      C += k # Accumulate the normalization constant!
+  hist /= C
+
+def get_q_mine(frame, x, h):
+  global q_mine
+  get_hist_inplace(q_mine, frame, x, h)
+
+def get_p0_mine(frame, y, h):
+  global p0_mine
+  get_hist_inplace(p0_mine, frame, y, h)
+
+def get_p1_mine(frame, y, h):
+  global p1_mine
+  get_hist_inplace(p1_mine, frame, y, h)
+
+def my_method(frame, y, h0):
   start_time = time.time()
+  y0 = y
+
+  s_h = round_pt((h0[0]*.10, h0[1]*.10))
+  h_n10 = (h0[0]-s_h[0], h0[1]-s_h[1])
+  h_p10 = (h0[0]+s_h[0], h0[1]+s_h[1])
+  hs = [h_n10, h0, h_p10]
+
+  best_d = 100
+  best_h = h0
+  best_y = y0
+  n_iterations = 0
+
+  for h in hs:
+    converged = False
+    while not converged:
+      n_iterations += 1
+      get_p0_mine(frame, y0, h)
+      rho0 = get_rho_jensen_shannon(p0_mine, q)
+
+      numx = numy = den = EPSILON
+      img_h, img_w, _ = frame.shape
+      xb, yb = get_roi(y0, h, (img_w, img_h))
+      for xi in range(xb[0], xb[1]):
+        for yi in range(yb[0], yb[1]):
+          u = rgb_2_u(frame[yi,xi,:])
+          wi = np.sqrt(q_mine[u]/p0_mine[u])
+          norm = get_norm2(y0, (xi, yi), h)
+          g = get_g_gauss(norm)
+          numx += xi*wi*g
+          numy += yi*wi*g
+          den += wi*g
+      y1 = round_pt((numx/den, numy/den))
+
+      get_p1_mine(frame, y1, h)
+      rho1 = get_rho_jensen_shannon(p1_mine, q_mine)
+
+      if rho1 < rho0:
+        y1 = round_pt( ((y0[0]+y1[0])/2, (y0[1]+y1[1])/2) )
+        get_p1_mine(frame, y1, h)
+        rho1 = get_rho_jensen_shannon(p1_mine, q_mine)
+
+      if y1 == y0 or n_iterations > 50:
+        converged = True
+        d = get_d_jensen_shannon(rho1)
+        if d < best_d:
+          best_y = y1
+          best_h = h
+          best_d = d
+      else:
+        y0 = y1
+
+  print(f"Converged after {n_iterations} iterations")
   return ({
-        'x0' : y[0],
-        'x1' : y[1],
-        'h0' : h[0],
-        'h1' : h[1],
-      }, { 
-        'iterations' : 0,
-        'time' : time.time() - start_time
-      })
+    'x0' : best_y[0],
+    'x1' : best_y[1],
+    'h0' : best_h[0],
+    'h1' : best_h[1],
+  }, {
+    'iterations' : n_iterations,
+    'time' : time.time() - start_time
+  })
 
 def get_frame_results(truth_rect, rects, frame_rects, mean_shift_stats, my_method_stats):
   return {}
@@ -290,10 +397,14 @@ def process(sequence_path):
       
       y0 = (truth_rad['x0'], truth_rad['x1'])
       h = (truth_rad['h0'], truth_rad['h1'])
+      y0_mine = (truth_rad['x0'], truth_rad['x1'])
+      h_mine = (truth_rad['h0'], truth_rad['h1'])
+
       print(f"Target location: ({y0[0]}, {y0[1]})")
       print(f"Target dimensions: ({h[0]}, {h[1]})")
       
       get_q(frame, y0, h)
+      get_q_mine(frame, y0_mine, h_mine)
       mean_shift_rad = truth_rad
       my_method_rad = truth_rad
       mean_shift_stats = {
@@ -306,12 +417,13 @@ def process(sequence_path):
       # Get the predicted bounding rectangles
       y0 = (mean_shift_rad['x0'], mean_shift_rad['x1'])
       h = (mean_shift_rad['h0'], mean_shift_rad['h1'])
-      print(f"Target location: ({y0[0]}, {y0[1]})")
-      print(f"Target dimensions: ({h[0]}, {h[1]})")
-      
+      y0_mine = (my_method_rad['x0'], my_method_rad['x1'])
+      h_mine = (my_method_rad['h0'], my_method_rad['h1'])
+
       mean_shift_rad, mean_shift_stats = mean_shift(frame, y0, h)
-      #my_method_rad = my_method(frame, q, y0, h)
-      my_method_rad = truth_rad
+      my_method_rad, my_method_stats = my_method(frame, y0_mine, h_mine)
+      #my_method_rad = truth_rad
+      #mean_shift_rad = truth_rad
 
     # Gather rects for rendering
     rects = [
