@@ -21,6 +21,7 @@ KERNEL_CONST = np.power(2*np.pi, -3/2)
 EPSILON = np.finfo(float).eps
 
 # Globals
+# These are here for performance.
 bin_LUT = np.zeros(1)
 q = np.zeros(np.power(N_BINS, 3))
 p0 = np.zeros(np.power(N_BINS, 3))
@@ -85,13 +86,14 @@ def read_ground_truth(seq):
     })
   return gt
 
+# Got good better performance with a Look up table for the bins
 def generate_bin_LUT(space_min, space_max, n_bins):
   global bin_LUT
   bin_LUT = np.zeros(space_max-space_min+1).astype(int)
   for v in range(space_min, space_max+1):
     bin_LUT[v] = min(n_bins-1, int(np.floor(((v - space_min) / space_max) * n_bins)))
-  print(bin_LUT)
 
+# Convert a rectange into the point/radius form expected in mean_shift
 def rect_2_rad(rect):
   h0, h1 = (int(np.ceil(rect['w']/2)), int(np.ceil(rect['h']/2)))
   return {
@@ -101,6 +103,7 @@ def rect_2_rad(rect):
     'h1' : h1
   }
 
+# Convert a point/radius into a rectange expected for display
 def rad_2_rect(rad):
   return {
     'x' : rad['x0'] - rad['h0'],
@@ -109,16 +112,22 @@ def rad_2_rect(rad):
     'h' : rad['h1'] * 2
   }
 
+# Find the norm of a vector
+# This is a HUGE performance hog as well.
 def get_norm2(x, xi, h):
   return np.linalg.norm([(xi[0]-x[0])/h[0], (xi[1]-x[1])/h[1]])
 
+# Look up u (pixel value) for the given RGB
+# This is bgr because that is how OpenCV stores colors!
 def rgb_2_u(bgr):
   b, g, r = bgr
   return bin_LUT[r] + N_BINS * (bin_LUT[g] + N_BINS * bin_LUT[b])
 
+# Round a point to the nearest pixel
 def round_pt(x):
   return (int(np.round(x[0])), int(np.round(x[1])))
 
+# Constrain the region of interest to the frame
 def get_roi(x, h, img_dim):
   x1 = min(img_dim[0], x[0]+h[0])
   x0 = max(0, min(x[0]-h[0], img_dim[0]))
@@ -126,8 +135,9 @@ def get_roi(x, h, img_dim):
   y0 = max(0, min(x[1]-h[1], img_dim[1]))
   return (x0, x1), (y0, y1)
 
-# These functions are the papers method
+# These functions are the papers method ----------------------------
 
+# Derivative of Formula 4
 def get_g(norm_x_2):
   if norm_x_2 < 1:
     return 0.75
@@ -135,17 +145,22 @@ def get_g(norm_x_2):
     return 0.375
   return EPSILON
 
+# Formula 4
 def get_k(norm_x_2):
   if norm_x_2 < 1:
     return 0.75*(1-norm_x_2)
   return EPSILON
 
+# Formula 17
 def get_rho(p, q):
   return np.sum(np.sqrt(np.multiply(p, q)))
 
+# Formula 18
 def get_d(rho):
   return np.sqrt(1-rho)
 
+# This generates the probability density function for a ROI
+# Formulas 19, 21
 def get_hist_inplace(hist, frame, x, h):
   hist.fill(0) # Need to clear out previous values
   C = EPSILON # This is the normalization constant
@@ -172,10 +187,14 @@ def get_p1(frame, y, h):
   global p1
   get_hist_inplace(p1, frame, y, h)
 
+# This is the mean shift algorithm described in the paper
+# While the paper makes claims that it achieves 30 fps, I cannot achieve such performance
+# Python profiler points to issues with the nested for loops
 def mean_shift(frame, y, h0):
   start_time = time.time()
   y0 = y
 
+  # This is the scale variation described in 4.3
   s_h = round_pt((h0[0]*.10, h0[1]*.10))
   h_n10 = (h0[0]-s_h[0], h0[1]-s_h[1])
   h_p10 = (h0[0]+s_h[0], h0[1]+s_h[1])
@@ -190,9 +209,11 @@ def mean_shift(frame, y, h0):
     converged = False
     while not converged:
       n_iterations += 1
+      # Step 1
       get_p0(frame, y0, h)
       rho0 = get_rho(p0, q)
 
+      # Step 2 and 3
       numx = numy = den = EPSILON
       img_h, img_w, _ = frame.shape
       xb, yb = get_roi(y0, h, (img_w, img_h))
@@ -207,14 +228,17 @@ def mean_shift(frame, y, h0):
           den += wi*g
       y1 = round_pt((numx/den, numy/den))
 
+      # Step 3
       get_p1(frame, y1, h)
       rho1 = get_rho(p1, q)
 
+      # Step 4
       if rho1 < rho0:
         y1 = round_pt( ((y0[0]+y1[0])/2, (y0[1]+y1[1])/2) )
         get_p1(frame, y1, h)
         rho1 = get_rho(p1, q)
 
+      # Step 5
       if y1 == y0 or n_iterations > 50:
         converged = True
         d = get_d(rho1)
@@ -236,7 +260,7 @@ def mean_shift(frame, y, h0):
     'time' : time.time() - start_time
   })
 
-# These functions are my method
+# These functions are my method -----------------------------------
 
 def get_g_gauss(norm_x_2):
   if norm_x_2 < 1:
@@ -286,6 +310,10 @@ def get_p1_mine(frame, y, h):
   global p1_mine
   get_hist_inplace(p1_mine, frame, y, h)
 
+# This method is identical to the mean_shift method with a few notable changes:
+# The rho calculation is done with Jenson-Shannon instead of Bhattacharyya
+# The distance measure is updated to accomodate for the change
+# We are still using the epanechnikov kernel for calculating histograms and gradient
 def my_method(frame, y, h0):
   start_time = time.time()
   y0 = y
@@ -350,9 +378,11 @@ def my_method(frame, y, h0):
     'time' : time.time() - start_time
   })
 
+# Convert status and other info into a result that we will write to disk
 def get_frame_results(truth_rect, rects, frame_rects, mean_shift_stats, my_method_stats):
   return {}
 
+# Draw rectangles on a frame
 def draw_rects(img, rects):
   for rect in rects:
     r = rect['rect']
@@ -363,6 +393,7 @@ def draw_rects(img, rects):
     rect_img = cv2.rectangle(img, tl, br, color, thickness)
   return rect_img
 
+# Display the frame with rectangles.
 def display_results(frame, rects):
   frame_rects = draw_rects(frame, rects)
   cv2.imshow('',frame_rects)
@@ -391,7 +422,7 @@ def process(sequence_path):
 
     if frame_num == 0:
       # Get the target_info from the initial frame
-      # Just set initil bounding rectangles to the ground truth
+      # Just set initial bounding rectangles to the ground truth
       h, w, d = frame.shape
       print(f"Frame dimensions: ({w}, {h}, {d})")
       
