@@ -13,12 +13,15 @@ import zipfile
 from datetime import datetime
 from scipy.spatial import distance
 
+import matplotlib.pyplot as plt
+
 # Constants
 BIT_DEPTH = 8
-#FRAMERATE = 60
+FRAMERATE = 15
 N_BINS = 32
 KERNEL_CONST = np.power(2*np.pi, -3/2)
 EPSILON = np.finfo(float).eps
+MAX_ITERATIONS = 25
 
 # Globals
 # These are here for performance.
@@ -34,11 +37,56 @@ p1_mine = np.zeros(np.power(N_BINS, 3))
 def write_results(results, results_dir):
   print(f"Writing results to: {results_dir}")
   timestamp = datetime.now().strftime("%m-%d-%Y_%H:%M:%S")
-  result_out_dir = os.path.join(results_dir, timestamp + '-' + results['name'])
+  result_out_dir = os.path.join(results_dir, timestamp + '-' + os.path.splitext(results['name'])[0])
   if not os.path.exists(result_out_dir):
     print(f'Creating output directory {result_out_dir}')
-    # TODO: Write results
-    #os.mkdir(result_out_dir)
+    os.mkdir(result_out_dir)
+  os.chdir(result_out_dir)
+
+  # Write the video out
+  frame_h, frame_w, _ = results['frames'][0]['frame_with_rects'].shape
+  out = cv2.VideoWriter('marked_video.avi',cv2.VideoWriter_fourcc(*"MJPG"), FRAMERATE, (frame_w,frame_h))
+  for frame in results['frames']:
+    frame_img = frame['frame_with_rects']
+    out.write(frame_img)
+  out.release()
+
+  # Write the plots out
+  frames_x = range(1, len(results['frames'])+1)
+
+  fig, ax = plt.subplots(nrows=1, ncols=1)
+  iou_orig_y = [iou['orig']['iou'] for iou in results['frames']]
+  iou_mine_y = [iou['mine']['iou'] for iou in results['frames']]
+  ax.plot(frames_x, iou_orig_y, color='green')
+  ax.plot(frames_x, iou_mine_y, color='red')
+  ax.set_title('Intersection / Union (Higher is better)')
+  ax.set_xlabel('Frame #')
+  ax.set_ylabel('IoU')
+  fig.savefig('iou.png', bbox_inches='tight')
+  plt.close(fig)
+
+  fig, ax = plt.subplots(nrows=1, ncols=1)
+  iters_orig_y = [it['orig']['iters'] for it in results['frames']]
+  iters_mine_y = [it['mine']['iters'] for it in results['frames']]
+  ax.plot(frames_x, iters_orig_y, color='green')
+  ax.plot(frames_x, iters_mine_y, color='red')
+  ax.set_title('Iterations till convergence (Lower is better)')
+  ax.set_xlabel('Frame #')
+  ax.set_ylabel('Iterations')
+  fig.savefig('iters.png', bbox_inches='tight')
+  plt.close(fig)
+
+  fig, ax = plt.subplots(nrows=1, ncols=1)
+  iters_orig_y = [t['orig']['time'] for t in results['frames']]
+  iters_mine_y = [t['mine']['time'] for t in results['frames']]
+  ax.plot(frames_x, iters_orig_y, color='green')
+  ax.plot(frames_x, iters_mine_y, color='red')
+  ax.set_title('Time to converge (seconds) (Lower is better)')
+  ax.set_xlabel('Frame #')
+  ax.set_ylabel('Time (s)')
+  fig.savefig('time.png', bbox_inches='tight')
+  plt.close(fig)
+
 
 def get_frame_count(seq):
   info = seq.namelist()
@@ -134,6 +182,46 @@ def get_roi(x, h, img_dim):
   y1 = min(img_dim[1], x[1]+h[1])
   y0 = max(0, min(x[1]-h[1], img_dim[1]))
   return (x0, x1), (y0, y1)
+
+# This is the Generalized Intersection / Union
+# See https://giou.stanford.edu/
+def get_giou(truth, predict):
+  Bg = [truth['x'], truth['y'], 
+        truth['x'] + truth['w'], truth['y'] + truth['h']]
+  Bp = [predict['x'], predict['y'], 
+        predict['x'] + predict['w'], predict['y'] + predict['h']]
+
+  # This ensures winding order of Bp
+  x1hp = min(Bp[0], Bp[2])
+  x2hp = max(Bp[0], Bp[2])
+  y1hp = min(Bp[1], Bp[3])
+  y2hp = max(Bp[1], Bp[3])
+
+  Ag = (Bg[2] - Bg[0])*(Bg[3] - Bg[1])
+  Ap = (x2hp - x1hp)*(y2hp - y1hp)
+
+  x1I = max(x1hp, Bg[0])
+  x2I = min(x2hp, Bg[2])
+  y1I = max(y1hp, Bg[1])
+  y2I = min(y2hp, Bg[3])
+
+  I = 0
+  if x2I > x1I and y2I > y1I:
+    I = (x2I-x1I)*(y2I-y1I)
+
+  x1c = min(x1hp, Bg[0])
+  x2c = max(x2hp, Bg[2])
+  y1c = min(y1hp, Bg[1])
+  y2c = max(y2hp, Bg[3])
+
+  Ac = (x2c - x1c)*(y2c - y1c)
+
+  U = Ap + Ag - I
+  IoU = I / float(U)
+
+  GIoU = IoU - ((Ac - U)/float(Ac))
+
+  return GIoU
 
 # These functions are the papers method ----------------------------
 
@@ -239,7 +327,7 @@ def mean_shift(frame, y, h0):
         rho1 = get_rho(p1, q)
 
       # Step 5
-      if y1 == y0 or n_iterations > 50:
+      if y1 == y0 or n_iterations > MAX_ITERATIONS:
         converged = True
         d = get_d(rho1)
         if d < best_d:
@@ -357,7 +445,7 @@ def my_method(frame, y, h0):
         get_p1_mine(frame, y1, h)
         rho1 = get_rho_jensen_shannon(p1_mine, q_mine)
 
-      if y1 == y0 or n_iterations > 50:
+      if y1 == y0 or n_iterations > MAX_ITERATIONS:
         converged = True
         d = get_d_jensen_shannon(rho1)
         if d < best_d:
@@ -380,7 +468,19 @@ def my_method(frame, y, h0):
 
 # Convert status and other info into a result that we will write to disk
 def get_frame_results(truth_rect, rects, frame_rects, mean_shift_stats, my_method_stats):
-  return {}
+  return {
+    'frame_with_rects' : frame_rects,
+    'orig': {
+      'iou' : get_giou(truth_rect['rect'], rects[0]['rect']),
+      'iters' : mean_shift_stats['iterations'],
+      'time' : mean_shift_stats['time']
+    },
+    'mine': {
+      'iou' : get_giou(truth_rect['rect'], rects[1]['rect']),
+      'iters' : my_method_stats['iterations'],
+      'time' : my_method_stats['time']
+    }
+  }
 
 # Draw rectangles on a frame
 def draw_rects(img, rects):
@@ -411,6 +511,7 @@ def process(sequence_path):
 
   results = {}
   results['name'] = os.path.basename(sequence_path)
+  results['frames'] = []
 
   for frame_num in range(0, n_frames):
     print(f"Working on frame {frame_num}")
@@ -439,10 +540,12 @@ def process(sequence_path):
       mean_shift_rad = truth_rad
       my_method_rad = truth_rad
       mean_shift_stats = {
-        'iterations' : 0
+        'iterations' : 0,
+        'time': 0
       }
       my_method_stats = {
-        'iterations' : 0
+        'iterations' : 0,
+        'time': 0
       }
     else:
       # Get the predicted bounding rectangles
@@ -468,7 +571,7 @@ def process(sequence_path):
 
     # Do the analysis here, accumulate into results
     res = get_frame_results(rects[0], rects[1:], frame_rects, mean_shift_stats, my_method_stats)
-    results[f'frame_{frame_num}'] = res
+    results['frames'].append(res)
 
   return results
 
