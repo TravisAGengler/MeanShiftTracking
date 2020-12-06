@@ -37,6 +37,9 @@ def main():
   dataset, seq, out_dir = parse_args()
   print(f"Using dataset: {dataset}")
   print(f"Downloading sequences: {seq}")
+  if not os.path.exists(out_dir):
+    print(f"Creating directory {out_dir}")
+    os.mkdir(out_dir)
   sequences = get_requested_sequences(dataset, seq)
   print(sequences)
   download_sequences(sequences, out_dir)

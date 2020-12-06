@@ -13,6 +13,8 @@ import zipfile
 from datetime import datetime
 from scipy.spatial import distance
 
+import matplotlib
+matplotlib.use('agg') # Need this on windows
 import matplotlib.pyplot as plt
 
 # Constants
@@ -36,8 +38,11 @@ p1_mine = np.zeros(np.power(N_BINS, 3))
 
 def write_results(results, results_dir):
   print(f"Writing results to: {results_dir}")
-  timestamp = datetime.now().strftime("%m-%d-%Y_%H:%M:%S")
+  timestamp = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
   result_out_dir = os.path.join(results_dir, timestamp + '-' + os.path.splitext(results['name'])[0])
+  if not os.path.exists(results_dir):
+    print(f"Creating output root directory {results_dir}")
+    os.mkdir(results_dir)
   if not os.path.exists(result_out_dir):
     print(f'Creating output directory {result_out_dir}')
     os.mkdir(result_out_dir)

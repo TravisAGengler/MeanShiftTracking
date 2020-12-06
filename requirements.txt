@@ -1,6 +1,7 @@
-matplotlib
-numpy
-opencv-python
+# The specified versions were required to fix in windows python 3.7
+matplotlib==3.2.2
+numpy==1.14.5
+opencv-python==4.0.0.21
 requests
 scipy
 tqdm
