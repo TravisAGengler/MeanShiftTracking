@@ -36,6 +36,9 @@ q_mine = np.zeros(np.power(N_BINS, 3))
 p0_mine = np.zeros(np.power(N_BINS, 3))
 p1_mine = np.zeros(np.power(N_BINS, 3))
 
+# Write results to results_dir
+# results - The results object to write
+# results_dir - The directory to place the results in
 def write_results(results, results_dir):
   print(f"Writing results to: {results_dir}")
   timestamp = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
@@ -92,7 +95,9 @@ def write_results(results, results_dir):
   fig.savefig('time.png', bbox_inches='tight')
   plt.close(fig)
 
-
+# Get the number of frames in the sequence
+# seq - The sequence to get the frame count for
+# Returns the number of frames in the sequence
 def get_frame_count(seq):
   info = seq.namelist()
   # Get the number of names that have .jpg extensions
@@ -103,6 +108,10 @@ def get_frame_count(seq):
   n_frames = len(list_post)
   return n_frames
 
+# Read the frame_num frame from the sequence and return it
+# seq - The sequence to get the frame from
+# frame_num - The frame number to get
+# Returns the frame as a bgr row major 3d vector
 def read_frame(seq, frame_num):
   info = seq.namelist()
   frame_str = str(frame_num+1).zfill(4)
@@ -117,6 +126,9 @@ def read_frame(seq, frame_num):
   img = cv2.imdecode(img_bytes, cv2.IMREAD_COLOR)
   return img
 
+# Read the ground truth rectangles from the sequence
+# seq - The sequence to get the ground truth rectangles from
+# Returns a list of rectangles in frame order
 def read_ground_truth(seq):
   info = seq.namelist()
   r = re.compile(".*groundtruth_rect.txt")
@@ -139,7 +151,12 @@ def read_ground_truth(seq):
     })
   return gt
 
+# Generate the look up table for the color values for the PDEs
 # Got good better performance with a Look up table for the bins
+# space_min - The minimum value of the color space
+# space_max - The maximum value of the color space
+# n_bins - The number of bins to place each color value in
+# Modifies global bin_LUT
 def generate_bin_LUT(space_min, space_max, n_bins):
   global bin_LUT
   bin_LUT = np.zeros(space_max-space_min+1).astype(int)
@@ -147,6 +164,8 @@ def generate_bin_LUT(space_min, space_max, n_bins):
     bin_LUT[v] = min(n_bins-1, int(np.floor(((v - space_min) / space_max) * n_bins)))
 
 # Convert a rectange into the point/radius form expected in mean_shift
+# rect - The input rectange to turn into a point/radius
+# Returns the point/radius form of the rectange
 def rect_2_rad(rect):
   h0, h1 = (int(np.ceil(rect['w']/2)), int(np.ceil(rect['h']/2)))
   return {
@@ -157,6 +176,8 @@ def rect_2_rad(rect):
   }
 
 # Convert a point/radius into a rectange expected for display
+# rad - The input point/radius to turn into a point/radius
+# Returns the rectangle form of the point/radius
 def rad_2_rect(rad):
   return {
     'x' : rad['x0'] - rad['h0'],
@@ -165,22 +186,34 @@ def rad_2_rect(rad):
     'h' : rad['h1'] * 2
   }
 
-# Find the norm of a vector
+# Find the norm squared of a vector defined by two points
 # This is a HUGE performance hog as well.
+# x - The first point
+# xi - The second point
+# h - The radius (in both x and y directions) of the area of interest. Used to normalize the norm
+# Returns the norm squared of the normalized vector
 def get_norm2(x, xi, h):
   return np.linalg.norm([(xi[0]-x[0])/h[0], (xi[1]-x[1])/h[1]])
 
 # Look up u (pixel value) for the given RGB
 # This is bgr because that is how OpenCV stores colors!
+# bgr - the BGR tuple for the color 
+# Returns the u index in the PDE corresponding to the color
 def rgb_2_u(bgr):
   b, g, r = bgr
   return bin_LUT[r] + N_BINS * (bin_LUT[g] + N_BINS * bin_LUT[b])
 
 # Round a point to the nearest pixel
+# x - The point to round
+# Returns the rounded point
 def round_pt(x):
   return (int(np.round(x[0])), int(np.round(x[1])))
 
 # Constrain the region of interest to the frame
+# x - The center of the RoI
+# h - The radius of both the x and y axis of the RoI
+# The image dimensions (w, h) for the image
+# Returns the constrained region of interest
 def get_roi(x, h, img_dim):
   x1 = min(img_dim[0], x[0]+h[0])
   x0 = max(0, min(x[0]-h[0], img_dim[0]))
@@ -190,6 +223,9 @@ def get_roi(x, h, img_dim):
 
 # This is the Generalized Intersection / Union
 # See https://giou.stanford.edu/
+# truth - The ground truth rectangle
+# predict - The prediction rectangle
+# The GIoU score of the two rectangles
 def get_giou(truth, predict):
   Bg = [truth['x'], truth['y'], 
         truth['x'] + truth['w'], truth['y'] + truth['h']]
@@ -231,6 +267,8 @@ def get_giou(truth, predict):
 # These functions are the papers method ----------------------------
 
 # Derivative of Formula 4
+# norm_x_2 - The norm squared of the point x
+# Returns the profile gradient of at the point x
 def get_g(norm_x_2):
   if norm_x_2 < 1:
     return 0.75
@@ -239,21 +277,33 @@ def get_g(norm_x_2):
   return EPSILON
 
 # Formula 4
+# norm_x_2 - The norm squared of the point x
+# Returns the profile of at the point x
 def get_k(norm_x_2):
   if norm_x_2 < 1:
     return 0.75*(1-norm_x_2)
   return EPSILON
 
 # Formula 17
+# p - The target candidate PDE
+# q - The target model PDE
+# Returns the Bhattacharyya coefficent between the two PDEs
 def get_rho(p, q):
   return np.sum(np.sqrt(np.multiply(p, q)))
 
 # Formula 18
+# rho - The Bhattacharyya coefficent from get_rho
+# Returns the Bhattacharyya distance for the rho value
 def get_d(rho):
   return np.sqrt(1-rho)
 
-# This generates the probability density function for a ROI
+# This generates the probability density function for a RoI
 # Formulas 19, 21
+# hist - The histogram to modify in-place
+# frame - The frame to get the color values from
+# x - The center of the RoI
+# h - The radius in both x and y directions for the RoI
+# Modifies the global hist
 def get_hist_inplace(hist, frame, x, h):
   hist.fill(0) # Need to clear out previous values
   C = EPSILON # This is the normalization constant
@@ -268,14 +318,29 @@ def get_hist_inplace(hist, frame, x, h):
       C += k # Accumulate the normalization constant!
   hist /= C
 
+# Get the target model for a RoI
+# frame - The frame to get the pixel values from
+# x - The center of the RoI
+# h - The radius in both x and y directions for the RoI
+# Modifies the q global variable
 def get_q(frame, x, h):
   global q
   get_hist_inplace(q, frame, x, h)
 
+# Get the target candidate for a RoI
+# frame - The frame to get the pixel values from
+# x - The center of the RoI
+# h - The radius in both x and y directions for the RoI
+# Modifies the p0 global variable
 def get_p0(frame, y, h):
   global p0
   get_hist_inplace(p0, frame, y, h)
 
+# Get the target candidate for a RoI
+# frame - The frame to get the pixel values from
+# x - The center of the RoI
+# h - The radius in both x and y directions for the RoI
+# Modifies the p1 global variable
 def get_p1(frame, y, h):
   global p1
   get_hist_inplace(p1, frame, y, h)
@@ -283,6 +348,9 @@ def get_p1(frame, y, h):
 # This is the mean shift algorithm described in the paper
 # While the paper makes claims that it achieves 30 fps, I cannot achieve such performance
 # Python profiler points to issues with the nested for loops
+# frame - The frame to get the pixel values from
+# x - The center of the RoI
+# h - The radius in both x and y directions for the RoI
 def mean_shift(frame, y, h0):
   start_time = time.time()
   y0 = y
@@ -355,28 +423,26 @@ def mean_shift(frame, y, h0):
 
 # These functions are my method -----------------------------------
 
-def get_g_gauss(norm_x_2):
-  if norm_x_2 < 1:
-    return 0.75
-  if norm_x_2 == 1:
-    return 0.375
-  return EPSILON
-  #return 0.5*np.exp(-0.5*norm_x_2)*KERNEL_CONST
-
-def get_k_gauss(norm_x_2):
-  if norm_x_2 < 1:
-    return 0.75*(1-norm_x_2)
-  return EPSILON
-  #return np.exp(-0.5*norm_x_2)*KERNEL_CONST
-
+# Get the measurement for the similarity between p and q PDEs
+# p - The target candidate PDE
+# q - The target model PDE
+# Returns the Jensen-Shannon Divergence between the two PDEs
 def get_rho_jensen_shannon(p, q):
   #return np.sum(np.sqrt(np.multiply(p, q)))
   return distance.jensenshannon(p,q)
 
+# rho - The Jensen-Shannon Divergence from get_rho
+# Returns the Jensen-Shannon distance for the rho value
 def get_d_jensen_shannon(rho):
   #return np.sqrt(1-rho)
   return np.sqrt(rho)
 
+# This generates the probability density function for a RoI
+# hist - The histogram to modify in-place
+# frame - The frame to get the color values from
+# x - The center of the RoI
+# h - The radius in both x and y directions for the RoI
+# Modifies the global hist
 def get_hist_inplace_mine(hist, frame, x, h):
   hist.fill(0) # Need to clear out previous values
   C = EPSILON # This is the normalization constant
@@ -385,20 +451,35 @@ def get_hist_inplace_mine(hist, frame, x, h):
   for xi in range(xb[0], xb[1]):
     for yi in range(yb[0], yb[1]):
       norm = get_norm2(x, (xi, yi), h)
-      k = get_k_gauss(norm)
+      k = get_k(norm)
       u = rgb_2_u(frame[yi,xi,:])
       hist[u] += k
       C += k # Accumulate the normalization constant!
   hist /= C
 
+# Get the target model for a RoI
+# frame - The frame to get the pixel values from
+# x - The center of the RoI
+# h - The radius in both x and y directions for the RoI
+# Modifies the q_mine global variable
 def get_q_mine(frame, x, h):
   global q_mine
   get_hist_inplace(q_mine, frame, x, h)
 
+# Get the target candidate for a RoI
+# frame - The frame to get the pixel values from
+# x - The center of the RoI
+# h - The radius in both x and y directions for the RoI
+# Modifies the p0_mine global variable
 def get_p0_mine(frame, y, h):
   global p0_mine
   get_hist_inplace(p0_mine, frame, y, h)
 
+# Get the target candidate for a RoI
+# frame - The frame to get the pixel values from
+# x - The center of the RoI
+# h - The radius in both x and y directions for the RoI
+# Modifies the p1_mine global variable
 def get_p1_mine(frame, y, h):
   global p1_mine
   get_hist_inplace(p1_mine, frame, y, h)
@@ -407,6 +488,9 @@ def get_p1_mine(frame, y, h):
 # The rho calculation is done with Jenson-Shannon instead of Bhattacharyya
 # The distance measure is updated to accomodate for the change
 # We are still using the epanechnikov kernel for calculating histograms and gradient
+# frame - The frame to get the pixel values from
+# x - The center of the RoI
+# h - The radius in both x and y directions for the RoI
 def my_method(frame, y, h0):
   start_time = time.time()
   y0 = y
@@ -436,7 +520,7 @@ def my_method(frame, y, h0):
           u = rgb_2_u(frame[yi,xi,:])
           wi = np.sqrt(q_mine[u]/p0_mine[u])
           norm = get_norm2(y0, (xi, yi), h)
-          g = get_g_gauss(norm)
+          g = get_g(norm)
           numx += xi*wi*g
           numy += yi*wi*g
           den += wi*g
@@ -472,6 +556,12 @@ def my_method(frame, y, h0):
   })
 
 # Convert status and other info into a result that we will write to disk
+# truth_rect - The ground truth rectangle
+# rects - The predicted rectangles
+# frame_rects - The image with rectangles overlayed
+# mean_shift_stats - The stats from the mean_shift method
+# my_method_stats - The stats from  the my_method method
+# Returns the results for the frame
 def get_frame_results(truth_rect, rects, frame_rects, mean_shift_stats, my_method_stats):
   return {
     'frame_with_rects' : frame_rects,
@@ -488,6 +578,9 @@ def get_frame_results(truth_rect, rects, frame_rects, mean_shift_stats, my_metho
   }
 
 # Draw rectangles on a frame
+# img - The image to draw the rectangles on
+# rects - The rectangles to draw on the image
+# Returns the image with the rectangles overlayed
 def draw_rects(img, rects):
   for rect in rects:
     r = rect['rect']
@@ -499,12 +592,18 @@ def draw_rects(img, rects):
   return rect_img
 
 # Display the frame with rectangles.
+# frame - The frame to display
+# rects - The rectangles to draw on the image
+# Returns the image with the rectangles overlayed
 def display_results(frame, rects):
   frame_rects = draw_rects(frame, rects)
   cv2.imshow('',frame_rects)
   cv2.waitKey(1)
   return frame_rects
 
+# Perform the mean_shift and my_method on the sequence at sequence_path
+# sequence_path - The path to the sequence to be loaded and operated on
+# Returns a result object containing results for all frames
 def process(sequence_path):
   seq = zipfile.ZipFile(sequence_path, 'r')
 

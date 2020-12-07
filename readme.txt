@@ -1,4 +1,4 @@
-Real-Time Tracking of Non-Rigid Ob jects using Mean Shift
+Real-Time Tracking of Non-Rigid Objects using Mean Shift
 
 scrape_dataset.py contains code to scrape the Visual Tracker Benchmark datasets from http://cvlab.hanyang.ac.kr/tracker_benchmark/datasets.html. This prodces a dataset.json file that can later be used in...
 
