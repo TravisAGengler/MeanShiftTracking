@@ -95,6 +95,11 @@ def write_results(results, results_dir):
   fig.savefig('time.png', bbox_inches='tight')
   plt.close(fig)
 
+  # Write the rectangle bounding boxes out. This is for later calculating ccess rate vs. overlap threshold plot
+  rects = [r['rects'] for r in results['frames']]
+  with open('rects.json', 'w') as fp:
+    json.dump(rects, fp, indent=2, sort_keys=True)
+
 # Get the number of frames in the sequence
 # seq - The sequence to get the frame count for
 # Returns the number of frames in the sequence
@@ -565,6 +570,11 @@ def my_method(frame, y, h0):
 def get_frame_results(truth_rect, rects, frame_rects, mean_shift_stats, my_method_stats):
   return {
     'frame_with_rects' : frame_rects,
+    'rects' : {
+      'true' : truth_rect['rect'],
+      'orig' : rects[0]['rect'],
+      'mine' : rects[1]['rect']
+    },
     'orig': {
       'iou' : get_giou(truth_rect['rect'], rects[0]['rect']),
       'iters' : mean_shift_stats['iterations'],
